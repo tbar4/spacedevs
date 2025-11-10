@@ -1,0 +1,12 @@
+[package]
+name = "spacedevs"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [ "client",
+    "dal",
+    "migration",
+]
+
+[dependencies]
