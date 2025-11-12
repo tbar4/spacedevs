@@ -1,7 +1,7 @@
 use crate::endpoints::{article::Article, blog::Blog, report::Report};
-use crate::utils::urls::*;
+use crate::utils::urls::{self, *};
 use reqwest::{Client, Error};
-use serde::de::DeserializeOwned;
+use serde::de::{self, DeserializeOwned};
 use std::sync::Arc;
 
 /// Response structure for paginated API endpoints
@@ -13,39 +13,43 @@ pub struct PaginatedResponse<T> {
     pub results: Vec<T>,
 }
 
-pub struct SpaceDevsClient {
-    client: Arc<Client>,
-    base_url: String,
+pub enum SpaceDevsAPIBase {
+    SPACENEWS,
+    SPACEDATA,
 }
 
-pub struct SpaceDevsDataClient {
+pub struct SpaceDevsClient {
     client: Arc<Client>,
-    base_url: String,
+    base_url: SpaceDevsAPIBase,
+}
+
+impl Default for SpaceDevsClient {
+    fn default() -> Self {
+        Self {
+            client: Arc::new(Client::new()),
+            base_url: SpaceDevsAPIBase::SPACENEWS,
+        }
+    }
 }
 
 impl SpaceDevsClient {
     /// Create a new SpaceDevsClient with default configuration
     pub fn new() -> Self {
         Self {
-            client: Arc::new(Client::new()),
-            base_url: SPACEFLIGHT_NEWS_API_BASE.to_string(),
+            ..Default::default()
         }
     }
 
     /// Create a new SpaceDevsClient with custom base URL (useful for testing)
-    pub fn with_base_url(base_url: String) -> Self {
-        Self {
-            client: Arc::new(Client::new()),
-            base_url,
-        }
+    pub fn with_base_url(mut self, base_url: SpaceDevsAPIBase) -> Self {
+        self.base_url = base_url;
+        self
     }
 
     /// Create a new SpaceDevsClient with custom configuration
-    pub fn with_client(client: Client) -> Self {
-        Self {
-            client: Arc::new(client),
-            base_url: SPACEFLIGHT_NEWS_API_BASE.to_string(),
-        }
+    pub fn with_client(mut self, client: Client) -> Self {
+        self.client = Arc::new(client);
+        self
     }
 
     /// Get a reference to the underlying reqwest client
@@ -55,7 +59,12 @@ impl SpaceDevsClient {
 
     /// Build a full URL for an endpoint
     fn build_url(&self, endpoint: &str) -> String {
-        format!("{}/{}", self.base_url, endpoint.trim_start_matches('/'))
+        let base_url = match self.base_url {
+            SpaceDevsAPIBase::SPACEDATA => urls::SPACEDEVS_DATA_API_BASE,
+            SpaceDevsAPIBase::SPACENEWS => urls::SPACEFLIGHT_NEWS_API_BASE,
+        };
+
+        format!("{}/{}", base_url, endpoint.trim_start_matches('/'))
     }
 
     /// Fetch data from an endpoint and deserialize it
@@ -111,44 +120,5 @@ impl SpaceDevsClient {
     /// Fetch reports endpoint (raw JSON)
     pub async fn get_reports(&self) -> Result<serde_json::Value, Error> {
         self.get("reports").await
-    }
-}
-
-// Implementation for SpaceDevsDataClient
-impl SpaceDevsDataClient {
-    /// Create a new SpaceDevsDataClient with default configuration
-    pub fn new() -> Self {
-        Self {
-            client: Arc::new(Client::new()),
-            base_url: SPACEDEVS_DATA_API_BASE.to_string(),
-        }
-    }
-
-    /// Create a new SpaceDevsDataClient with custom base URL
-    pub fn with_base_url(base_url: String) -> Self {
-        Self {
-            client: Arc::new(Client::new()),
-            base_url,
-        }
-    }
-
-    /// Get a reference to the underlying reqwest client
-    pub fn client(&self) -> &Client {
-        &self.client
-    }
-
-    /// Build a full URL for an endpoint
-    fn build_url(&self, endpoint: &str) -> String {
-        format!("{}/{}", self.base_url, endpoint.trim_start_matches('/'))
-    }
-
-    /// Fetch data from an endpoint and deserialize it
-    pub async fn get<T>(&self, endpoint: &str) -> Result<T, Error>
-    where
-        T: DeserializeOwned,
-    {
-        let url = self.build_url(endpoint);
-        let response = self.client.get(&url).send().await?;
-        response.json::<T>().await
     }
 }

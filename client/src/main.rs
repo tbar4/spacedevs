@@ -1,4 +1,4 @@
-use client::{SpaceDevsClient, SpaceDevsDataClient};
+use client::SpaceDevsClient;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -6,9 +6,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a new news client
     let news_client = SpaceDevsClient::new();
-
-    // Create a new data client
-    let _data_client = SpaceDevsDataClient::new();
 
     // Fetch articles with structured data
     println!("Fetching structured articles...");
@@ -64,12 +61,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("Failed to get articles list: {}", e);
         }
     }
-
-    // Demonstrate data client usage
-    println!("\nFetching data from SpaceDevs API...");
-    // Example: This would fetch data from the SpaceDevs data API
-    // For example: launches, events, etc.
-    println!("SpaceDevs Data Client ready for use!");
 
     Ok(())
 }
