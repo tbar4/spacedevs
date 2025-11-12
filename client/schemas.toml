@@ -1,8 +1,12 @@
-# Schema definitions for API endpoints
-# This file defines the structure of data returned by various endpoints
-# and their supported query parameters
+# Complete API configuration file
+# Define all endpoints, their URLs, schemas, and query parameters in one place
 
-[article]
+# Article endpoint configuration
+[articles]
+url = "https://api.spaceflightnewsapi.net/v4/articles"
+enabled = true
+
+[articles.schema]
 id = "u32"
 title = "String"
 url = "String"
@@ -13,29 +17,22 @@ published_at = "String"
 updated_at = "String"
 featured = "bool"
 
-[article.nested_fields]
+[articles.schema.nested_fields]
 authors = "Vec<Author>"
 launches = "Vec<Launch>"
 events = "Vec<Event>"
 
-[article.query_params]
-# Pagination parameters
-limit = { type = "u32", default = 10, description = "Number of results to return per page" }
-offset = { type = "u32", default = 0, description = "Number of results to skip" }
+[articles.query_params]
+limit = 10
+offset = 0
+# updated_at__gte = "2025-10-01T00:00:00Z"
 
-# Filtering parameters
-search = { type = "String", description = "Search term to filter results" }
-ordering = { type = "String", description = "Field to order results by" }
-news_site = { type = "String", description = "Filter by news site" }
-summary_contains = { type = "String", description = "Filter by summary content" }
+# Blog endpoint configuration
+[blogs]
+url = "https://api.spaceflightnewsapi.net/v4/blogs"
+enabled = true
 
-# Date filtering
-published_at__gte = { type = "String", description = "Filter by published date (greater than or equal)" }
-published_at__lte = { type = "String", description = "Filter by published date (less than or equal)" }
-updated_at__gte = { type = "String", description = "Filter by updated date (greater than or equal)" }
-updated_at__lte = { type = "String", description = "Filter by updated date (less than or equal)" }
-
-[blog]
+[blogs.schema]
 id = "u32"
 title = "String"
 url = "String"
@@ -45,25 +42,20 @@ summary = "String"
 published_at = "String"
 updated_at = "String"
 featured = "bool"
+
+[blogs.schema.nested_fields]
 launches = "Vec<Launch>"
 
-[blog.query_params]
-# Pagination parameters
-limit = { type = "u32", default = 10, description = "Number of results to return per page" }
-offset = { type = "u32", default = 0, description = "Number of results to skip" }
+[blogs.query_params]
+limit = 5
+# published_at__gte = "2025-11-01T00:00:00Z"
 
-# Filtering parameters
-search = { type = "String", description = "Search term to filter results" }
-ordering = { type = "String", description = "Field to order results by" }
-news_site = { type = "String", description = "Filter by news site" }
+# Report endpoint configuration
+[reports]
+url = "https://api.spaceflightnewsapi.net/v4/reports"
+enabled = false  # Disabled by default
 
-# Date filtering
-published_at__gte = { type = "String", description = "Filter by published date (greater than or equal)" }
-published_at__lte = { type = "String", description = "Filter by published date (less than or equal)" }
-updated_at__gte = { type = "String", description = "Filter by updated date (greater than or equal)" }
-updated_at__lte = { type = "String", description = "Filter by updated date (less than or equal)" }
-
-[report]
+[reports.schema]
 id = "u32"
 title = "String"
 url = "String"
@@ -73,25 +65,33 @@ summary = "String"
 published_at = "String"
 updated_at = "String"
 featured = "bool"
+
+[reports.schema.nested_fields]
 launches = "Vec<Launch>"
 
-[report.query_params]
-# Pagination parameters
-limit = { type = "u32", default = 10, description = "Number of results to return per page" }
-offset = { type = "u32", default = 0, description = "Number of results to skip" }
+[reports.query_params]
+limit = 3
 
-# Filtering parameters
-search = { type = "String", description = "Search term to filter results" }
-ordering = { type = "String", description = "Field to order results by" }
-news_site = { type = "String", description = "Filter by news site" }
+# Example of a custom endpoint with specific parameters
+[recent_articles]
+url = "https://api.spaceflightnewsapi.net/v4/articles"
+enabled = true
 
-# Date filtering
-published_at__gte = { type = "String", description = "Filter by published date (greater than or equal)" }
-published_at__lte = { type = "String", description = "Filter by published date (less than or equal)" }
-updated_at__lte = { type = "String", description = "Filter by updated date (less than or equal)" }
+[recent_articles.schema]
+id = "u32"
+title = "String"
+published_at = "String"
+summary = "String"
+news_site = "String"
 
-# Define available types for validation
-[types]
-primitives = ["u32", "String", "bool"]
-collections = ["Vec"]
-nested = ["Author", "Launch", "Event"]
+[recent_articles.query_params]
+limit = 5
+ordering = "-published_at"
+# updated_at__gte = "2025-11-10T00:00:00Z"
+
+# Configuration for the execution
+[config]
+# Output format: "json", "table", or "detailed"
+output_format = "detailed"
+# Maximum number of items to display per endpoint
+max_display_items = 10

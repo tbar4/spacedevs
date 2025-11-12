@@ -1,0 +1,41 @@
+# Simple API configuration for testing
+# This file demonstrates the complete user-defined configuration approach
+
+# Article endpoint with limited results
+[articles]
+url = "https://api.spaceflightnewsapi.net/v4/articles"
+enabled = true
+
+[articles.schema]
+id = "u32"
+title = "String"
+published_at = "String"
+summary = "String"
+news_site = "String"
+
+[articles.query_params]
+limit = 3
+
+# Recent articles with date filtering
+[recent_articles]
+url = "https://api.spaceflightnewsapi.net/v4/articles"
+enabled = true
+
+[recent_articles.schema]
+id = "u32"
+title = "String"
+published_at = "String"
+summary = "String"
+
+[recent_articles.query_params]
+limit = 2
+ordering = "-published_at"
+# Uncomment the line below to filter by date
+# updated_at__gte = "2025-11-10T00:00:00Z"
+
+# Configuration for the execution
+[config]
+# Output format: "json", "table", or "detailed"
+output_format = "detailed"
+# Maximum number of items to display per endpoint
+max_display_items = 3

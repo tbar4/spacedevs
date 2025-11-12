@@ -92,12 +92,19 @@ impl SchemaManager {
     pub fn load_from_file(&mut self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let contents = fs::read_to_string(path)?;
         let config: toml::Value = toml::from_str(&contents)?;
+        self.load_from_toml_value(&config)
+    }
 
+    /// Load schemas from a TOML value
+    pub fn load_from_toml_value(
+        &mut self,
+        config: &toml::Value,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // Parse schemas from the TOML structure
         if let Some(tables) = config.as_table() {
             for (name, value) in tables {
-                // Skip special sections like [types]
-                if name == "types" {
+                // Skip special sections like [types] and [config]
+                if name == "types" || name == "config" {
                     continue;
                 }
 
@@ -111,45 +118,71 @@ impl SchemaManager {
                     continue;
                 }
 
+                // Skip schema sections (they're processed as part of the main schema)
+                if name.contains(".schema") {
+                    continue;
+                }
+
                 // Parse the schema
-                if let Some(schema_table) = value.as_table() {
-                    let mut fields = Vec::new();
-                    let mut nested_fields = HashMap::new();
-                    let mut query_params = HashMap::new();
+                if let Some(_schema_table) = value.as_table() {
+                    // Get schema definition from the dedicated schema section
+                    let schema_section_name = format!("{}.schema", name);
+                    let (fields, nested_fields) = if let Some(schema_section) =
+                        tables.get(&schema_section_name)
+                    {
+                        if let Some(schema_def_table) = schema_section.as_table() {
+                            let mut fields = Vec::new();
+                            let mut nested_fields = HashMap::new();
 
-                    // Parse regular fields
-                    for (field_name, field_type) in schema_table {
-                        if field_name != "nested_fields" && field_name != "query_params" {
-                            if let Some(type_str) = field_type.as_str() {
-                                fields.push(FieldDefinition {
-                                    name: field_name.clone(),
-                                    type_name: type_str.to_string(),
-                                    optional: false,
-                                });
-                            }
-                        }
-                    }
-
-                    // Parse nested fields if they exist
-                    let nested_key = format!("{}.nested_fields", name);
-                    if let Some(nested_section) = tables.get(&nested_key) {
-                        if let Some(nested_table) = nested_section.as_table() {
-                            for (field_name, field_type) in nested_table {
-                                if let Some(type_str) = field_type.as_str() {
-                                    nested_fields.insert(field_name.clone(), type_str.to_string());
+                            // Parse regular fields
+                            for (field_name, field_type) in schema_def_table {
+                                if field_name != "nested_fields" {
+                                    if let Some(type_str) = field_type.as_str() {
+                                        fields.push(FieldDefinition {
+                                            name: field_name.clone(),
+                                            type_name: type_str.to_string(),
+                                            optional: false,
+                                        });
+                                    }
                                 }
                             }
+
+                            // Parse nested fields if they exist
+                            if let Some(nested_section) = schema_def_table.get("nested_fields") {
+                                if let Some(nested_table) = nested_section.as_table() {
+                                    for (field_name, field_type) in nested_table {
+                                        if let Some(type_str) = field_type.as_str() {
+                                            nested_fields
+                                                .insert(field_name.clone(), type_str.to_string());
+                                        }
+                                    }
+                                }
+                            }
+
+                            (fields, nested_fields)
+                        } else {
+                            (Vec::new(), HashMap::new())
                         }
-                    }
+                    } else {
+                        (Vec::new(), HashMap::new())
+                    };
 
                     // Parse query parameters if they exist
+                    let mut query_params = HashMap::new();
                     let query_key = format!("{}.query_params", name);
                     if let Some(query_section) = tables.get(&query_key) {
                         if let Some(query_table) = query_section.as_table() {
-                            for (param_name, param_def) in query_table {
-                                let param_definition =
-                                    self.parse_query_param_definition(param_name, param_def)?;
-                                query_params.insert(param_name.clone(), param_definition);
+                            for (param_name, param_value) in query_table {
+                                // Simple parameter definition with value
+                                if let Some(value_str) = Self::toml_value_to_string(param_value) {
+                                    let param_definition = QueryParamDefinition {
+                                        name: param_name.clone(),
+                                        param_type: Self::infer_param_type(&value_str),
+                                        default: Some(Self::string_to_param_value(&value_str)),
+                                        description: None,
+                                    };
+                                    query_params.insert(param_name.clone(), param_definition);
+                                }
                             }
                         }
                     }
@@ -169,7 +202,45 @@ impl SchemaManager {
         Ok(())
     }
 
-    /// Parse a query parameter definition from TOML
+    /// Convert TOML value to string
+    fn toml_value_to_string(value: &toml::Value) -> Option<String> {
+        match value {
+            toml::Value::String(s) => Some(s.clone()),
+            toml::Value::Integer(i) => Some(i.to_string()),
+            toml::Value::Float(f) => Some(f.to_string()),
+            toml::Value::Boolean(b) => Some(b.to_string()),
+            _ => None,
+        }
+    }
+
+    /// Infer parameter type from string value
+    fn infer_param_type(value: &str) -> String {
+        if value.parse::<i64>().is_ok() {
+            "i64".to_string()
+        } else if value.parse::<f64>().is_ok() {
+            "f64".to_string()
+        } else if value.parse::<bool>().is_ok() {
+            "bool".to_string()
+        } else {
+            "String".to_string()
+        }
+    }
+
+    /// Convert string to parameter value
+    fn string_to_param_value(value: &str) -> QueryParamValue {
+        if let Ok(i) = value.parse::<i64>() {
+            QueryParamValue::Integer(i)
+        } else if let Ok(f) = value.parse::<f64>() {
+            QueryParamValue::Float(f)
+        } else if let Ok(b) = value.parse::<bool>() {
+            QueryParamValue::Boolean(b)
+        } else {
+            QueryParamValue::String(value.to_string())
+        }
+    }
+
+    /// Parse a query parameter definition from TOML (deprecated)
+    #[allow(dead_code)]
     fn parse_query_param_definition(
         &self,
         name: &str,
