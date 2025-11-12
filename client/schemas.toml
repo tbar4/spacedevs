@@ -1,5 +1,6 @@
 # Schema definitions for API endpoints
 # This file defines the structure of data returned by various endpoints
+# and their supported query parameters
 
 [article]
 id = "u32"
@@ -17,6 +18,23 @@ authors = "Vec<Author>"
 launches = "Vec<Launch>"
 events = "Vec<Event>"
 
+[article.query_params]
+# Pagination parameters
+limit = { type = "u32", default = 10, description = "Number of results to return per page" }
+offset = { type = "u32", default = 0, description = "Number of results to skip" }
+
+# Filtering parameters
+search = { type = "String", description = "Search term to filter results" }
+ordering = { type = "String", description = "Field to order results by" }
+news_site = { type = "String", description = "Filter by news site" }
+summary_contains = { type = "String", description = "Filter by summary content" }
+
+# Date filtering
+published_at__gte = { type = "String", description = "Filter by published date (greater than or equal)" }
+published_at__lte = { type = "String", description = "Filter by published date (less than or equal)" }
+updated_at__gte = { type = "String", description = "Filter by updated date (greater than or equal)" }
+updated_at__lte = { type = "String", description = "Filter by updated date (less than or equal)" }
+
 [blog]
 id = "u32"
 title = "String"
@@ -29,6 +47,22 @@ updated_at = "String"
 featured = "bool"
 launches = "Vec<Launch>"
 
+[blog.query_params]
+# Pagination parameters
+limit = { type = "u32", default = 10, description = "Number of results to return per page" }
+offset = { type = "u32", default = 0, description = "Number of results to skip" }
+
+# Filtering parameters
+search = { type = "String", description = "Search term to filter results" }
+ordering = { type = "String", description = "Field to order results by" }
+news_site = { type = "String", description = "Filter by news site" }
+
+# Date filtering
+published_at__gte = { type = "String", description = "Filter by published date (greater than or equal)" }
+published_at__lte = { type = "String", description = "Filter by published date (less than or equal)" }
+updated_at__gte = { type = "String", description = "Filter by updated date (greater than or equal)" }
+updated_at__lte = { type = "String", description = "Filter by updated date (less than or equal)" }
+
 [report]
 id = "u32"
 title = "String"
@@ -40,6 +74,21 @@ published_at = "String"
 updated_at = "String"
 featured = "bool"
 launches = "Vec<Launch>"
+
+[report.query_params]
+# Pagination parameters
+limit = { type = "u32", default = 10, description = "Number of results to return per page" }
+offset = { type = "u32", default = 0, description = "Number of results to skip" }
+
+# Filtering parameters
+search = { type = "String", description = "Search term to filter results" }
+ordering = { type = "String", description = "Field to order results by" }
+news_site = { type = "String", description = "Filter by news site" }
+
+# Date filtering
+published_at__gte = { type = "String", description = "Filter by published date (greater than or equal)" }
+published_at__lte = { type = "String", description = "Filter by published date (less than or equal)" }
+updated_at__lte = { type = "String", description = "Filter by updated date (less than or equal)" }
 
 # Define available types for validation
 [types]

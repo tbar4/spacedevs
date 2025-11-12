@@ -2,6 +2,7 @@ use crate::schema::SchemaManager;
 use reqwest::{Client, Error};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Response structure for paginated API endpoints
@@ -87,6 +88,44 @@ impl RESTClient {
     ) -> Result<Value, Box<dyn std::error::Error>> {
         if let Some(schema_manager) = &self.schema_manager {
             let json_data = self.get_json(endpoint).await?;
+            schema_manager.apply_schema(schema_name, &json_data)
+        } else {
+            Err("No schema manager configured".into())
+        }
+    }
+
+    /// Fetch data from an endpoint with query parameters defined in schema
+    pub async fn get_with_params<T>(
+        &self,
+        endpoint: &str,
+        schema_name: &str,
+        params: &HashMap<String, String>,
+    ) -> Result<T, Box<dyn std::error::Error>>
+    where
+        T: DeserializeOwned,
+    {
+        if let Some(schema_manager) = &self.schema_manager {
+            let query_string = schema_manager.build_query_string(schema_name, params)?;
+            let url = format!("{}{}", self.build_url(endpoint), query_string);
+            let response = self.client.get(&url).send().await?;
+            Ok(response.json::<T>().await?)
+        } else {
+            Err("No schema manager configured".into())
+        }
+    }
+
+    /// Fetch data from an endpoint with query parameters and apply schema
+    pub async fn get_with_params_and_schema(
+        &self,
+        endpoint: &str,
+        schema_name: &str,
+        params: &HashMap<String, String>,
+    ) -> Result<Value, Box<dyn std::error::Error>> {
+        if let Some(schema_manager) = &self.schema_manager {
+            let query_string = schema_manager.build_query_string(schema_name, params)?;
+            let url = format!("{}{}", self.build_url(endpoint), query_string);
+            let response = self.client.get(&url).send().await?;
+            let json_data = response.json::<Value>().await?;
             schema_manager.apply_schema(schema_name, &json_data)
         } else {
             Err("No schema manager configured".into())
