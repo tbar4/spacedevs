@@ -1,64 +1,55 @@
-use client::SpaceDevsClient;
+use client::{RESTClient, SchemaManager, article::Article, paginated::Paginated};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("SpaceDevs Client Example");
+    println!("\n--- Generic REST Client Examples ---");
 
-    // Create a new news client
-    let news_client = SpaceDevsClient::new();
+    // Example of using the generic REST client with SpaceFlight News API
+    let space_client = RESTClient::new("https://api.spaceflightnewsapi.net/v4");
 
-    // Fetch articles with structured data
-    println!("Fetching structured articles...");
-    match news_client.get_articles_structured().await {
-        Ok(response) => {
-            println!("Successfully fetched {} articles!", response.count);
-            if let Some(first_article) = response.results.first() {
+    // Fetch articles using static typing
+    println!("\nFetching articles with static typing...");
+    match space_client.get::<Paginated<Article>>("articles").await {
+        Ok(articles) => {
+            println!("Successfully fetched {} articles!", articles.count);
+
+            if let Some(first_article) = articles.results.first() {
                 println!("First article: {}", first_article.title);
-                println!("Published at: {}", first_article.published_at);
-                println!("Authors: {}", first_article.authors.len());
             }
         }
         Err(e) => {
-            eprintln!("Failed to fetch structured articles: {}", e);
+            eprintln!("Failed to fetch articles: {}", e);
         }
     }
 
-    // Fetch blogs with structured data
-    println!("\nFetching structured blogs...");
-    match news_client.get_blogs_structured().await {
-        Ok(response) => {
-            println!("Successfully fetched {} blogs!", response.count);
-            if let Some(first_blog) = response.results.first() {
-                println!("First blog: {}", first_blog.title);
-                println!("Published at: {}", first_blog.published_at);
-                println!("Authors: {}", first_blog.authors.len());
-            }
-        }
-        Err(e) => {
-            eprintln!("Failed to fetch structured blogs: {}", e);
-        }
-    }
+    // Example of using dynamic schema loading
+    println!("\n--- Dynamic Schema Loading Example ---");
 
-    // Fetch a single article by ID if we have any
-    println!("\nFetching single article...");
-    match news_client.get_articles_structured().await {
-        Ok(response) => {
-            if let Some(first_article) = response.results.first() {
-                match news_client.get_article(first_article.id).await {
-                    Ok(article) => {
-                        println!(
-                            "Successfully fetched article #{}: {}",
-                            article.id, article.title
-                        );
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to fetch single article: {}", e);
-                    }
+    // Create a schema manager and load schemas from TOML file
+    let mut schema_manager = SchemaManager::new();
+    match schema_manager.load_from_file("schemas.toml") {
+        Ok(()) => {
+            println!("Successfully loaded schemas from schemas.toml");
+
+            // Create a REST client with schema support
+            let dynamic_client =
+                RESTClient::with_schemas("https://api.spaceflightnewsapi.net/v4", schema_manager);
+
+            // Fetch articles using dynamic schema
+            println!("\nFetching articles with dynamic schema...");
+            match dynamic_client.get_with_schema("articles", "article").await {
+                Ok(data) => {
+                    println!("Successfully fetched articles with dynamic schema!");
+                    println!("Data structure: {:?}", data);
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch articles with dynamic schema: {}", e);
                 }
             }
         }
         Err(e) => {
-            eprintln!("Failed to get articles list: {}", e);
+            eprintln!("Failed to load schemas: {}", e);
+            println!("Skipping dynamic schema example...");
         }
     }
 

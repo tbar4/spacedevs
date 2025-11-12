@@ -1,5 +1,9 @@
-mod client;
+pub mod client;
 pub mod endpoints;
-mod utils;
+pub mod schema;
+pub mod utils;
 
-pub use client::client::SpaceDevsClient;
+pub use client::rest_client::PaginatedResponse;
+pub use client::rest_client::RESTClient;
+pub use endpoints::*;
+pub use schema::*;

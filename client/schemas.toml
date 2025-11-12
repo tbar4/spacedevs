@@ -1,0 +1,48 @@
+# Schema definitions for API endpoints
+# This file defines the structure of data returned by various endpoints
+
+[article]
+id = "u32"
+title = "String"
+url = "String"
+image_url = "String"
+news_site = "String"
+summary = "String"
+published_at = "String"
+updated_at = "String"
+featured = "bool"
+
+[article.nested_fields]
+authors = "Vec<Author>"
+launches = "Vec<Launch>"
+events = "Vec<Event>"
+
+[blog]
+id = "u32"
+title = "String"
+url = "String"
+image_url = "String"
+news_site = "String"
+summary = "String"
+published_at = "String"
+updated_at = "String"
+featured = "bool"
+launches = "Vec<Launch>"
+
+[report]
+id = "u32"
+title = "String"
+url = "String"
+image_url = "String"
+news_site = "String"
+summary = "String"
+published_at = "String"
+updated_at = "String"
+featured = "bool"
+launches = "Vec<Launch>"
+
+# Define available types for validation
+[types]
+primitives = ["u32", "String", "bool"]
+collections = ["Vec"]
+nested = ["Author", "Launch", "Event"]
